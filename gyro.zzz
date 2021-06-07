@@ -1,0 +1,14 @@
+pkgs:
+  tatl:
+    version: 0.0.0
+    description: "Zig library for deserializing Aseprite files"
+    license: Unlicense
+    source_url: "https://github.com/BanchouBoo/tatl"
+    tags:
+      aseprite
+
+    root: tatl.zig
+    files:
+      README.md
+      LICENSE
+      tatl.zig
