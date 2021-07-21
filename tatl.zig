@@ -66,6 +66,8 @@ pub const RGBA = struct {
     }
 
     pub fn format(self: RGBA, comptime fmt: []const u8, options: std.fmt.FormatOptions, stream: anytype) !void {
+        _ = fmt;
+        _ = options;
         try stream.print("RGBA({d:>3}, {d:>3}, {d:>3}, {d:>3})", .{ self.r, self.g, self.b, self.a });
     }
 };
@@ -76,7 +78,7 @@ pub const Palette = struct {
     transparent_index: u8,
     names: [][]const u8,
 
-    pub fn deserializeOld(prev_pal: Palette, allocator: *Allocator, reader: Reader) !Palette {
+    pub fn deserializeOld(prev_pal: Palette, reader: Reader) !Palette {
         var pal = prev_pal;
 
         const packets = try reader.readIntLittle(u16);
@@ -90,7 +92,7 @@ pub const Palette = struct {
                 break :val if (s == 0) @as(u16, 256) else s;
             };
 
-            for (pal.colors[skip..skip + size]) |*entry, j| {
+            for (pal.colors[skip .. skip + size]) |*entry, j| {
                 entry.* = try RGBA.deserializeOld(reader);
                 pal.names[skip + j] = "";
             }
@@ -112,7 +114,7 @@ pub const Palette = struct {
 
         try reader.skipBytes(8, .{});
 
-        for (pal.colors[from..to + 1]) |*entry, i| {
+        for (pal.colors[from .. to + 1]) |*entry, i| {
             const flags = try reader.readStruct(PaletteFlags);
             entry.* = try RGBA.deserializeNew(reader);
             if (flags.has_name)
@@ -301,7 +303,7 @@ pub const CelExtra = struct {
         return @bitCast(u128, self) == 0;
     }
 
-    pub fn deserialize(allocator: *Allocator, reader: Reader) !CelExtra {
+    pub fn deserialize(reader: Reader) !CelExtra {
         const flags = try reader.readStruct(CelExtraFlags);
         if (flags.precise_bounds) {
             return CelExtra{
@@ -610,7 +612,7 @@ pub const AsepriteImport = struct {
         var using_new_palette = false;
         var last_with_user_data: ?UserDataChunks = null;
 
-        for (result.frames) |*frame, fi| {
+        for (result.frames) |*frame| {
             var cels = try ArrayListUnmanaged(Cel).initCapacity(allocator, 0);
             errdefer cels.deinit(allocator);
             var last_cel: ?*Cel = null;
@@ -638,11 +640,7 @@ pub const AsepriteImport = struct {
                 switch (chunk_type) {
                     .OldPaletteA, .OldPaletteB => {
                         if (!using_new_palette)
-                            result.palette = try Palette.deserializeOld(
-                                result.palette,
-                                allocator,
-                                reader,
-                            );
+                            result.palette = try Palette.deserializeOld(result.palette, reader);
                     },
                     .Layer => {
                         try layers.append(allocator, try Layer.deserialize(allocator, reader));
@@ -661,7 +659,7 @@ pub const AsepriteImport = struct {
                         last_with_user_data = UserDataChunks.new(last_cel.?);
                     },
                     .CelExtra => {
-                        const extra = try CelExtra.deserialize(allocator, reader);
+                        const extra = try CelExtra.deserialize(reader);
                         if (last_cel) |c| {
                             c.extra = extra;
                             last_cel = null;
