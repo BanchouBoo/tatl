@@ -602,6 +602,10 @@ pub const AsepriteImport = struct {
             allocator.free(result.palette.colors);
             allocator.free(result.palette.names);
         }
+
+        result.slices = &.{};
+        result.tags = &.{};
+
         result.frames = try allocator.alloc(Frame, frame_count);
         errdefer allocator.free(result.frames);
 
