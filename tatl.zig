@@ -101,7 +101,7 @@ pub const Palette = struct {
         return pal;
     }
 
-    pub fn deserializeNew(prev_pal: Palette, allocator: *Allocator, reader: Reader) !Palette {
+    pub fn deserializeNew(prev_pal: Palette, allocator: Allocator, reader: Reader) !Palette {
         var pal = prev_pal;
 
         const size = try reader.readIntLittle(u32);
@@ -176,7 +176,7 @@ pub const Layer = struct {
     name: []const u8,
     user_data: UserData,
 
-    pub fn deserialize(allocator: *Allocator, reader: Reader) !Layer {
+    pub fn deserialize(allocator: Allocator, reader: Reader) !Layer {
         var result: Layer = undefined;
         result.flags = try reader.readStruct(LayerFlags);
         result.type = try reader.readEnum(LayerType, .Little);
@@ -199,7 +199,7 @@ pub const ImageCel = struct {
     pub fn deserialize(
         color_depth: ColorDepth,
         compressed: bool,
-        allocator: *Allocator,
+        allocator: Allocator,
         reader: Reader,
     ) !ImageCel {
         var result: ImageCel = undefined;
@@ -255,7 +255,7 @@ pub const Cel = struct {
     extra: CelExtra,
     user_data: UserData,
 
-    pub fn deserialize(color_depth: ColorDepth, allocator: *Allocator, reader: Reader) !Cel {
+    pub fn deserialize(color_depth: ColorDepth, allocator: Allocator, reader: Reader) !Cel {
         var result: Cel = undefined;
         result.layer = try reader.readIntLittle(u16);
         result.x = try reader.readIntLittle(i16);
@@ -342,7 +342,7 @@ pub const ColorProfile = struct {
     gamma: u32,
     icc_data: []const u8,
 
-    pub fn deserialize(allocator: *Allocator, reader: Reader) !ColorProfile {
+    pub fn deserialize(allocator: Allocator, reader: Reader) !ColorProfile {
         var result: ColorProfile = undefined;
         result.type = try reader.readEnum(ColorProfileType, .Little);
         result.flags = try reader.readStruct(ColorProfileFlags);
@@ -371,7 +371,7 @@ pub const Tag = struct {
     color: [3]u8,
     name: []const u8,
 
-    pub fn deserialize(allocator: *Allocator, reader: Reader) !Tag {
+    pub fn deserialize(allocator: Allocator, reader: Reader) !Tag {
         var result: Tag = undefined;
         result.from = try reader.readIntLittle(u16);
         result.to = try reader.readIntLittle(u16);
@@ -383,7 +383,7 @@ pub const Tag = struct {
         return result;
     }
 
-    pub fn deserializeAll(allocator: *Allocator, reader: Reader) ![]Tag {
+    pub fn deserializeAll(allocator: Allocator, reader: Reader) ![]Tag {
         const len = try reader.readIntLittle(u16);
         try reader.skipBytes(8, .{});
         const result = try allocator.alloc(Tag, len);
@@ -412,7 +412,7 @@ pub const UserData = struct {
         return user_data.text.len == 0 and @bitCast(u32, user_data.color) == 0;
     }
 
-    pub fn deserialize(allocator: *Allocator, reader: Reader) !UserData {
+    pub fn deserialize(allocator: Allocator, reader: Reader) !UserData {
         var result: UserData = undefined;
         const flags = try reader.readStruct(UserDataFlags);
         // zig fmt: off
@@ -507,7 +507,7 @@ pub const Slice = struct {
     keys: []SliceKey,
     user_data: UserData,
 
-    pub fn deserialize(allocator: *Allocator, reader: Reader) !Slice {
+    pub fn deserialize(allocator: Allocator, reader: Reader) !Slice {
         var result: Slice = undefined;
         const key_len = try reader.readIntLittle(u32);
         result.flags = try reader.readStruct(SliceFlags);
@@ -561,7 +561,7 @@ pub const AsepriteImport = struct {
 
     pub const magic: u16 = 0xA5E0;
 
-    pub fn deserialize(allocator: *Allocator, reader: Reader) !AsepriteImport {
+    pub fn deserialize(allocator: Allocator, reader: Reader) !AsepriteImport {
         var result: AsepriteImport = undefined;
         try reader.skipBytes(4, .{});
         if (magic != try reader.readIntLittle(u16)) {
@@ -711,7 +711,7 @@ pub const AsepriteImport = struct {
         return result;
     }
 
-    pub fn free(self: AsepriteImport, allocator: *Allocator) void {
+    pub fn free(self: AsepriteImport, allocator: Allocator) void {
         allocator.free(self.palette.colors);
         for (self.palette.names) |name| {
             if (name.len > 0)
@@ -753,7 +753,7 @@ pub const AsepriteImport = struct {
     }
 };
 
-fn readSlice(comptime SliceT: type, comptime LenT: type, allocator: *Allocator, reader: Reader) ![]SliceT {
+fn readSlice(comptime SliceT: type, comptime LenT: type, allocator: Allocator, reader: Reader) ![]SliceT {
     const len = (try reader.readIntLittle(LenT)) * @sizeOf(SliceT);
     var bytes = try allocator.alloc(u8, len);
     errdefer allocator.free(bytes);
@@ -761,6 +761,6 @@ fn readSlice(comptime SliceT: type, comptime LenT: type, allocator: *Allocator, 
     return std.mem.bytesAsSlice(SliceT, bytes);
 }
 
-pub fn import(allocator: *Allocator, reader: Reader) !AsepriteImport {
+pub fn import(allocator: Allocator, reader: Reader) !AsepriteImport {
     return AsepriteImport.deserialize(allocator, reader);
 }
