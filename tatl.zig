@@ -435,7 +435,11 @@ const UserDataChunks = union(enum) {
     Slice: *Slice,
 
     pub fn new(pointer: anytype) UserDataChunks {
-        const name = @typeName(@typeInfo(@TypeOf(pointer)).Pointer.child);
+        const name = comptime value: {
+            const type_name = @typeName(@typeInfo(@TypeOf(pointer)).Pointer.child);
+            var iterator = std.mem.splitBackwards(u8, type_name, ".");
+            break :value iterator.first();
+        };
         return @unionInit(UserDataChunks, name, pointer);
     }
 
