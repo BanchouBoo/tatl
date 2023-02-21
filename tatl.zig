@@ -84,15 +84,16 @@ pub const Palette = struct {
         const packets = try reader.readIntLittle(u16);
         var skip: usize = 0;
 
-        var i: u16 = 0;
-        while (i < packets) : (i += 1) {
+        // var i: u16 = 0;
+        // while (i < packets) : (i += 1) {
+        for (0..packets) |i| {
             skip += try reader.readIntLittle(u8);
             const size: u16 = val: {
                 const s = try reader.readIntLittle(u8);
                 break :val if (s == 0) @as(u16, 256) else s;
             };
 
-            for (pal.colors[skip .. skip + size]) |*entry, j| {
+            for (pal.colors[skip .. skip + size], 0..) |*entry, j| {
                 entry.* = try RGBA.deserializeOld(reader);
                 pal.names[skip + j] = "";
             }
@@ -114,7 +115,7 @@ pub const Palette = struct {
 
         try reader.skipBytes(8, .{});
 
-        for (pal.colors[from .. to + 1]) |*entry, i| {
+        for (pal.colors[from .. to + 1], 0..) |*entry, i| {
             const flags = try reader.readStruct(PaletteFlags);
             entry.* = try RGBA.deserializeNew(reader);
             if (flags.has_name)
@@ -638,8 +639,9 @@ pub const AsepriteImport = struct {
             else
                 old_chunks;
 
-            var i: u32 = 0;
-            while (i < chunks) : (i += 1) {
+            // var i: u32 = 0;
+            // while (i < chunks) : (i += 1) {
+            for (0..chunks) |i| {
                 const chunk_start = try reader.context.getPos();
                 const chunk_size = try reader.readIntLittle(u32);
                 const chunk_end = chunk_start + chunk_size;
